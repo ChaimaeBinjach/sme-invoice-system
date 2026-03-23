@@ -87,14 +87,3 @@ The project also demonstrates that once business data is captured digitally, it 
 
 ---
 
-## Project Structure
-
-```bash
-.
-├── app.py
-├── analytics.py
-├── invoice.db
-├── requirements.txt
-├── .gitignore
-├── templates/
-└── README.md
