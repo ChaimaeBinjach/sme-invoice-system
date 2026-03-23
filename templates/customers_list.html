@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{# 
+    Page title that appears in the browser tab.
+    The visual layout (navbar, footer, etc.) comes from base.html.
+#}
+{% block title %}Customers - SME Invoice System{% endblock %}
+
+{% block content %}
+    {#
+        Customers list view.
+
+        Purpose of this page:
+        - shows all customers / business partners stored in the system,
+        - acts as "master data" for invoice generation (each invoice links to one customer),
+        - allows navigation to create a new customer or edit an existing one.
+
+        The Python view (list_customers in app.py) passes a "customers" list
+        to this template. Each element is a Customer object from SQLAlchemy.
+    #}
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <!-- Main heading and short explanation -->
+            <h1 class="mb-0">Customers</h1>
+            <div class="small text-muted">
+                Master data of SME clients and business partners used for invoicing.
+            </div>
+        </div>
+
+        <!-- Button to create a new customer record -->
+        <div class="text-end">
+            <a href="/customers/new" class="btn btn-primary">+ New customer</a>
+        </div>
+    </div>
+
+    {# 
+        If there is at least one customer in the database,
+        render them in a table. Otherwise show an "empty state" message.
+    #}
+    {% if customers %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Tax number</th>
+                        <th>Address</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Payment terms (days)</th>
+                        <th>Active</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {# 
+                        Loop through all Customer objects.
+
+                        For each row:
+                        - basic contact and tax information is displayed,
+                        - payment_terms_days shows how due dates will be calculated
+                          for new invoices,
+                        - the "Active" flag is visualised with a coloured badge,
+                        - an Edit button leads to the customer_form.html page in "edit" mode.
+                    #}
+                    {% for c in customers %}
+                        <!-- Greyed-out row if the customer is marked as inactive -->
+                        <tr class="{% if not c.is_active %}table-secondary{% endif %}">
+                            <td>{{ c.name }}</td>
+                            <td>{{ c.tax_number }}</td>
+                            <td>{{ c.address }}</td>
+                            <td>{{ c.email }}</td>
+                            <td>{{ c.phone }}</td>
+                            <td>{{ c.payment_terms_days }}</td>
+                            <td>
+                                {% if c.is_active %}
+                                    <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <!-- Edit link opens the same form as "New customer", but pre-filled -->
+                                <a href="/customers/{{ c.id }}/edit" class="btn btn-sm btn-outline-secondary">
+                                    Edit
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        {# 
+            If there are no customers in the system yet, show an info message.
+            This is typically the case right after initial deployment,
+            before running the demo data functions or creating real customers.
+        #}
+        <div class="alert alert-info">
+            No customers found yet.
+        </div>
+    {% endif %}
+{% endblock %}

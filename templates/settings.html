@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - SME Invoice System{% endblock %}
+
+{% block content %}
+    {#
+        Settings page.
+
+        In this prototype, configuration is intentionally simple:
+        - default tax rate for new invoices
+        - default working currency
+
+        Here we upgrade the currency part to a small dropdown of common options
+        (HUF, EUR, USD, GBP) plus an "Other" option that allows a custom code
+        such as MAD, PLN, CHF, etc.
+    #}
+    <h1 class="mb-3">Settings</h1>
+
+    {# Optional feedback message after saving #}
+    {% if message %}
+        <div class="alert alert-success">{{ message }}</div>
+    {% endif %}
+
+    <form method="post" class="card p-3 shadow-sm">
+        {# Default tax rate ---------------------------------------------------- #}
+        <div class="mb-3">
+            <label for="default_tax_percent" class="form-label">Default tax rate (%)</label>
+            <input
+                type="number"
+                step="0.01"
+                id="default_tax_percent"
+                name="default_tax_percent"
+                class="form-control"
+                value="{{ settings.default_tax_percent }}"
+            >
+            <div class="form-text">
+                Used as the suggested VAT rate when creating new invoices.
+            </div>
+        </div>
+
+        {# Default currency: dropdown + optional custom value ------------------ #}
+        <div class="mb-3">
+            <label for="currency_choice" class="form-label">Default currency</label>
+
+            {# 
+                First we offer a dropdown with a few common currencies.
+                The "currency_choice" field tells the backend which option
+                was picked. If "OTHER" is selected, we enable the text field
+                below so the user can type any ISO code (e.g. MAD).
+            #}
+            {% set common_currencies = ['HUF', 'EUR', 'USD', 'GBP'] %}
+            {% set current_currency = settings.default_currency %}
+            {% set is_common = current_currency in common_currencies %}
+
+            <select
+                id="currency_choice"
+                name="currency_choice"
+                class="form-select mb-2"
+            >
+                <option
+                    value="HUF"
+                    {% if current_currency == 'HUF' %}selected{% endif %}
+                >
+                    HUF – Hungarian forint
+                </option>
+                <option
+                    value="EUR"
+                    {% if current_currency == 'EUR' %}selected{% endif %}
+                >
+                    EUR – Euro
+                </option>
+                <option
+                    value="USD"
+                    {% if current_currency == 'USD' %}selected{% endif %}
+                >
+                    USD – US dollar
+                </option>
+                <option
+                    value="GBP"
+                    {% if current_currency == 'GBP' %}selected{% endif %}
+                >
+                    GBP – British pound
+                </option>
+                <option
+                    value="OTHER"
+                    {% if not is_common %}selected{% endif %}
+                >
+                    Other (custom code)
+                </option>
+            </select>
+
+            {#
+                This input holds the actual currency code that we store
+                in the database. For common currencies, it will be disabled
+                by JavaScript. For "Other", it becomes editable so that
+                the user can type something like "MAD".
+            #}
+            <input
+                type="text"
+                id="default_currency"
+                name="default_currency"
+                class="form-control"
+                value="{% if not is_common %}{{ current_currency }}{% endif %}"
+                placeholder="e.g. MAD, PLN, CHF"
+            >
+
+            <div class="form-text">
+                The system uses this code on invoices and in the dashboard.
+                For this thesis prototype, we do not implement automatic
+                currency conversion; we focus on a single working currency
+                at a time.
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save settings</button>
+    </form>
+
+    {# Small inline script to enable/disable the custom currency field ------- #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const selectEl = document.getElementById('currency_choice');
+            const inputEl = document.getElementById('default_currency');
+
+            function toggleCustomCurrency() {
+                if (!selectEl || !inputEl) return;
+
+                if (selectEl.value === 'OTHER') {
+                    // User wants to specify a custom code manually
+                    inputEl.disabled = false;
+                    if (!inputEl.value) {
+                        inputEl.placeholder = 'e.g. MAD, PLN, CHF';
+                    }
+                } else {
+                    // A common currency is selected; we derive the code from the dropdown
+                    inputEl.value = '';
+                    inputEl.disabled = true;
+                    inputEl.placeholder = '';
+                }
+            }
+
+            if (selectEl && inputEl) {
+                selectEl.addEventListener('change', toggleCustomCurrency);
+                // Initialise the correct state on page load
+                toggleCustomCurrency();
+            }
+        });
+    </script>
+{% endblock %}

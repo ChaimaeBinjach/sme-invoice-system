@@ -1,0 +1,77 @@
+/*
+    Global styles for the SME Invoice System.
+
+    This file only contains a few focused visual adjustments:
+    - base font and background,
+    - navbar look and brand typography,
+    - small tweaks for cards and footer.
+
+    The main layout and components (grid, tables, buttons...)
+    are still provided by Bootstrap. This keeps the prototype
+    simple but lets it look consistent and professional.
+*/
+
+/* Base font for the whole application.
+   Using a system font stack keeps rendering fast and readable. */
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Ensure the light background colour is consistent.
+   This works together with Bootstrap's .bg-light class. */
+body.bg-light {
+    background-color: #f5f6fa;
+}
+
+/* Navbar styling:
+   - dark background colour,
+   - slight shadow so it stands out from the page content. */
+.navbar.navbar-dark {
+    background-color: #111827;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* Slightly increase vertical padding to make the navbar look less cramped. */
+.navbar {
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
+}
+
+/* Brand text ("SME Invoice System") in the top-left corner:
+   - uses the Montserrat font loaded in base.html,
+   - all caps and letter spacing to look like a simple logo,
+   - bold weight and larger size so it is clearly visible. */
+.navbar-brand {
+    font-family: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 1.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+/* Navigation links in the top menu:
+   - slightly wider horizontal padding for easier clicking,
+   - modest font size to keep the menu compact. */
+.navbar-nav .nav-link {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    font-size: 0.96rem;
+}
+
+/* Simple hover effect so users see that links are interactive. */
+.navbar-nav .nav-link:hover {
+    text-decoration: underline;
+}
+
+/* Card components (used on home, dashboard, etc.):
+   - small border radius for a softer, modern look. */
+.card {
+    border-radius: 0.5rem;
+}
+
+/* Footer styling:
+   - light background to separate it from the content area,
+   - the text colour is defined in the HTML via Bootstrap utility classes. */
+footer {
+    background-color: #f8f9fa;
+}

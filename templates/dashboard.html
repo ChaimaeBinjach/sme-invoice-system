@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{# 
+    Page title that appears in the browser tab.
+    The base layout (base.html) wraps this content.
+#}
+{% block title %}Dashboard - SME Invoice System{% endblock %}
+
+{% block content %}
+    {#
+        Dashboard view of the SME Invoice System.
+
+        Purpose of this page:
+        - to give a quick, high-level overview of the situation of the SME,
+        - to show key performance indicators (KPIs) that are relevant to cash flow,
+        - to highlight overdue amounts and the concrete invoices behind them.
+
+        The numeric values are calculated in app.py (dashboard() route) and passed
+        into this template as:
+        - total_customers
+        - total_invoices
+        - total_amount
+        - total_unpaid
+        - total_overdue
+        - overdue_invoices (list of Invoice objects)
+    #}
+
+    <!-- Main title of the dashboard section -->
+    <h1 class="mb-4">Dashboard</h1>
+
+    {#
+        First row of KPI cards:
+        1) number of customers
+        2) number of invoices
+        3) total invoiced amount
+        4) unpaid amount (Sent + Overdue)
+
+        These cards give the reader a compact "at a glance" summary and
+        work very well as visual elements in the thesis report.
+    #}
+    <div class="row g-3 mb-4">
+        <!-- KPI: total customers in the system -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted mb-1">Customers</h6>
+                    <h3 class="card-title mb-0">{{ total_customers }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI: total number of invoices stored -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted mb-1">Total invoices</h6>
+                    <h3 class="card-title mb-0">{{ total_invoices }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI: total invoiced amount (sum of all invoice totals) -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted mb-1">Total invoiced</h6>
+                    <h3 class="card-title mb-0">
+                        {{ "%.0f"|format(total_amount) }} HUF
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI: unpaid amount = invoices with status "Sent" (not yet paid) -->
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted mb-1">Unpaid (Sent + Overdue)</h6>
+                    <h3 class="card-title mb-0 text-warning">
+                        {{ "%.0f"|format(total_unpaid) }} HUF
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {#
+        Second row: card for the total overdue amount.
+
+        This metric is particularly important for SMEs because it shows
+        how much money is already late, which can directly affect liquidity.
+    #}
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted mb-1">Overdue amount</h6>
+                    <h3 class="card-title mb-0 text-danger">
+                        {{ "%.0f"|format(total_overdue) }} HUF
+                    </h3>
+                    <p class="small text-muted mb-0">
+                        Sum of unpaid invoices past their due date.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {#
+        Table of overdue invoices.
+
+        This is the detailed list behind the "Overdue amount" KPI:
+        - each row shows one overdue invoice,
+        - the table allows the user to see which customer and which invoice numbers
+          contribute to the risk,
+        - the red row styling (table-danger) visually reinforces urgency.
+
+        From a thesis perspective, this demonstrates:
+        - how raw transactional data (invoices) is turned into management information,
+        - how digitalisation can support proactive follow-up with customers.
+    #}
+    <h2 class="h4 mt-4 mb-3">Overdue invoices</h2>
+
+    {% if overdue_invoices %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Due date</th>
+                        <th class="text-end">Total</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in overdue_invoices %}
+                        <!-- Each overdue invoice is highlighted in red for visibility -->
+                        <tr class="table-danger">
+                            <td>{{ inv.invoice_number }}</td>
+                            <td>{{ inv.customer.name }}</td>
+                            <td>{{ inv.due_date }}</td>
+                            <td class="text-end">{{ "%.2f"|format(inv.total_amount) }}</td>
+                            <td>{{ inv.status }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        {# Friendly message if there are no overdue invoices #}
+        <div class="alert alert-success">
+            🎉 No overdue invoices at the moment.
+        </div>
+    {% endif %}
+{% endblock %}

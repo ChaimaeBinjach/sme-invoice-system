@@ -1,0 +1,96 @@
+{# 
+    Base layout template for the SME Invoice System.
+
+    All other pages (home, dashboard, invoices, customers, settings)
+    extend this file and only fill the "title" and "content" blocks.
+
+    The base template defines:
+    - the HTML <head> section (title, fonts, Bootstrap, custom CSS),
+    - the top navigation bar,
+    - a container for page content,
+    - and a simple footer with thesis information.
+#}
+<!-- SME Invoice System - Prototype for MSc thesis (Chaimae Binjach, Óbuda University) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}SME Invoice System{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Custom favicon for the browser tab (image stored in /static/favicon.png) -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+
+    <!-- Google Font for the brand / headings (used for the app title in the navbar) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <!-- Bootstrap CSS from CDN for layout and components -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous"
+    >
+
+    <!-- Custom CSS for small visual adjustments (navbar, cards, footer) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="bg-light">
+    <!--
+        Top navigation bar shared by all pages.
+        Provides quick access to the main functional areas:
+        - Dashboard
+        - Invoices (including Due soon and Overdue)
+        - Customers
+        - Settings
+    -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <!-- Brand / application title -->
+            <a class="navbar-brand fw-bold" href="/">
+                SME Invoice System
+            </a>
+
+            <!-- Hamburger button for small screens -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Collapsible navigation links -->
+            <div class="collapse navbar-collapse" id="mainNav">
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" href="/dashboard">Dashboard</a>
+                    <a class="nav-link" href="/invoices">Invoices</a>
+                    <a class="nav-link" href="/invoices/due-soon">Due soon</a>
+                    <a class="nav-link" href="/invoices/overdue">Overdue</a>
+                    <a class="nav-link" href="/customers">Customers</a>
+                    <a class="nav-link" href="/settings">Settings</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main page content: child templates insert their content here -->
+    <div class="container mb-4">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Simple footer that also documents the academic context of the prototype -->
+    <footer class="mt-4 py-3 border-top text-center text-muted small">
+        SME Invoice System – Prototype for MSc thesis (Chaimae Binjach, Óbuda University, Business Informatics)
+    </footer>
+
+    <!-- Bootstrap JavaScript bundle for interactive components (navbar, etc.) -->
+    <script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDNDZxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"
+    ></script>
+</body>
+</html>

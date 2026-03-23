@@ -1,0 +1,283 @@
+{% extends "base.html" %} 
+
+{#
+    Page title in the browser tab.
+
+    - When mode == "edit"  → show "Edit Invoice - SME Invoice System"
+    - When mode == "create" → show "New Invoice - SME Invoice System"
+
+    The mode variable is passed from app.py.
+#}
+{% block title %}
+    {% if mode == 'edit' %}
+        Edit Invoice - SME Invoice System
+    {% else %}
+        New Invoice - SME Invoice System
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {#
+        Invoice form template.
+
+        This single template is reused for:
+        - creating a new invoice  (mode = "create", invoice = None)
+        - editing an existing one (mode = "edit",   invoice = Invoice instance)
+
+        Variables coming from app.py:
+        - mode               → "create" or "edit"
+        - invoice            → None (create) or Invoice object (edit)
+        - customers          → list of Customer objects for the dropdown
+        - settings           → Settings object (default tax and currency)
+        - tax_percent_value  → number used to pre-fill the tax % field
+        - error              → optional validation message (string)
+    #}
+
+    <h1 class="mb-3">
+        {% if mode == 'edit' %}
+            Edit Invoice
+        {% else %}
+            New Invoice
+        {% endif %}
+    </h1>
+
+    {# Validation error message from the backend (e.g. missing fields, wrong values) #}
+    {% if error %}
+        <div class="alert alert-danger">
+            {{ error }}
+        </div>
+    {% endif %}
+
+    {#
+        Main form element.
+
+        - method="post" because we are changing data in the database.
+        - The same endpoint handles both GET (show form) and POST (process form).
+    #}
+    <form method="post" class="card p-3 shadow-sm">
+
+        {# --- Basic header information: invoice number + customer ---------------- #}
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="invoice_number" class="form-label">Invoice number *</label>
+                <input
+                    type="text"
+                    id="invoice_number"
+                    name="invoice_number"
+                    class="form-control"
+                    required
+                    {#
+                        When editing, pre-fill with existing invoice.invoice_number.
+                        When creating, leave it empty.
+                    #}
+                    value="{{ invoice.invoice_number if invoice else '' }}"
+                >
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label for="customer_id" class="form-label">Customer *</label>
+                <select id="customer_id" name="customer_id" class="form-select" required>
+                    <option value="">-- Select customer --</option>
+
+                    {#
+                        Build the dropdown from the customers list.
+
+                        In edit mode, we auto-select the current invoice.customer_id.
+                    #}
+                    {% for c in customers %}
+                        <option
+                            value="{{ c.id }}"
+                            {% if invoice and invoice.customer_id == c.id %}selected{% endif %}
+                        >
+                            {{ c.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        {# --- Dates and status -------------------------------------------------- #}
+        <div class="row">
+            <!-- Issue date -->
+            <div class="col-md-4 mb-3">
+                <label for="issue_date" class="form-label">Issue date</label>
+                <input
+                    type="date"
+                    id="issue_date"
+                    name="issue_date"
+                    class="form-control"
+                    {#
+                        In edit mode, pre-fill with the existing issue_date.
+                        For new invoices, the backend uses today's date if this is left empty.
+                    #}
+                    value="{% if invoice and invoice.issue_date %}{{ invoice.issue_date }}{% endif %}"
+                >
+                <div class="form-text">
+                    Leave empty to use today's date (for new invoices).
+                </div>
+            </div>
+
+            <!-- Due date -->
+            <div class="col-md-4 mb-3">
+                <label for="due_date" class="form-label">Due date</label>
+                <input
+                    type="date"
+                    id="due_date"
+                    name="due_date"
+                    class="form-control"
+                    {#
+                        In edit mode, show stored due_date.
+                        For new invoices, if left empty, the system will calculate it
+                        from the customer's payment_terms_days.
+                    #}
+                    value="{% if invoice and invoice.due_date %}{{ invoice.due_date }}{% endif %}"
+                >
+                <div class="form-text">
+                    If empty, the system uses the customer's payment terms.
+                </div>
+            </div>
+
+            <!-- Status (Draft / Sent / Paid) -->
+            <div class="col-md-4 mb-3">
+                <label for="status" class="form-label">Status</label>
+                {# Helper variable to decide which status option is selected #}
+                {% set current_status = invoice.status if invoice else 'Draft' %}
+                <select id="status" name="status" class="form-select">
+                    <option value="Draft" {% if current_status == 'Draft' %}selected{% endif %}>Draft</option>
+                    <option value="Sent" {% if current_status == 'Sent' %}selected{% endif %}>Sent</option>
+                    <option value="Paid" {% if current_status == 'Paid' %}selected{% endif %}>Paid</option>
+                </select>
+            </div>
+        </div>
+
+        {# --- Optional line items ---------------------------------------------- #}
+        <h5 class="mt-3">Line items (optional)</h5>
+        <p class="small text-muted">
+            You can enter up to three line items. If provided, the system will calculate
+            the subtotal from these values. When editing, if these fields are left empty,
+            existing line items are kept as they are.
+        </p>
+
+        {#
+            The form always shows 3 empty rows, independent of how many items
+            are currently stored in the database.
+
+            The logic in app.py:
+            - If the user fills at least one description,
+              new line items are created and (in edit mode) replace old ones.
+            - If the user leaves all descriptions empty in edit mode,
+              the original items stay unchanged.
+        #}
+        {% for i in range(1, 4) %}
+            <div class="row mb-2">
+                <div class="col-md-6">
+                    <label class="form-label">Item {{ i }} description</label>
+                    <input
+                        type="text"
+                        name="item_desc_{{ i }}"
+                        class="form-control"
+                        placeholder="Description"
+                    >
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Qty</label>
+                    <input
+                        type="number"
+                        step="0.01"
+                        name="item_qty_{{ i }}"
+                        class="form-control"
+                        placeholder="1"
+                    >
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Unit price</label>
+                    <input
+                        type="number"
+                        step="0.01"
+                        name="item_price_{{ i }}"
+                        class="form-control"
+                        placeholder="0"
+                    >
+                </div>
+            </div>
+        {% endfor %}
+
+        <hr>
+
+        {# --- Financial summary fields: subtotal, tax %, currency -------------- #}
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label for="subtotal" class="form-label">Subtotal *</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    id="subtotal"
+                    name="subtotal"
+                    class="form-control"
+                    required
+                    {#
+                        In edit mode, pre-fill the stored subtotal value.
+                        In create mode, the field is empty and must be filled by the user,
+                        unless line items are provided (then the backend recalculates it).
+                    #}
+                    value="{{ invoice.subtotal if invoice else '' }}"
+                >
+                <div class="form-text">
+                    If line items are filled, this value will be recalculated on the server.
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <label for="tax_percent" class="form-label">Tax (%)</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    id="tax_percent"
+                    name="tax_percent"
+                    class="form-control"
+                    {#
+                        tax_percent_value is prepared by the backend:
+                        - For new invoices: default tax from Settings
+                        - For edits: approximate % based on subtotal and tax_amount
+                    #}
+                    value="{{ tax_percent_value }}"
+                >
+                <div class="form-text">
+                    You can adjust the default tax rate under Settings.
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <label for="currency" class="form-label">Currency</label>
+                <input
+                    type="text"
+                    id="currency"
+                    name="currency"
+                    class="form-control"
+                    {#
+                        In edit mode, use the invoice's stored currency.
+                        In create mode, use the default currency from Settings.
+                    #}
+                    value="{{ invoice.currency if invoice else settings.default_currency }}"
+                >
+            </div>
+        </div>
+
+        {# --- Notes / free-text field ------------------------------------------ #}
+        <div class="mb-3">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea
+                id="notes"
+                name="notes"
+                class="form-control"
+                rows="3"
+            >{{ invoice.notes if invoice and invoice.notes else '' }}</textarea>
+        </div>
+
+        {# --- Form buttons: submit + cancel ------------------------------------ #}
+        <button type="submit" class="btn btn-primary">
+            {% if mode == 'edit' %}Save changes{% else %}Save invoice{% endif %}
+        </button>
+        <a href="/invoices" class="btn btn-secondary ms-2">Cancel</a>
+    </form>
+{% endblock %}

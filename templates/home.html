@@ -1,0 +1,125 @@
+{% extends "base.html" %} 
+
+{# 
+    Page title for the browser tab.
+    This is combined with the base layout defined in base.html.
+#}
+{% block title %}Home - SME Invoice System{% endblock %}
+
+{% block content %}
+    {#
+        Home screen of the SME Invoice System prototype.
+
+        Role of this page in the thesis:
+        - introduces the purpose of the application in plain language,
+        - gives direct access to the main functional areas (dashboard, invoices, customers, settings),
+        - separates "normal" business functions from development/testing utilities,
+        - makes it clear that this is a prototype built for an MSc thesis, not a full product.
+    #}
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <!-- Main title and short explanation of the system's goal -->
+            <h1 class="mb-3">SME Invoice System</h1>
+
+            {# Lead paragraph: high-level description for non-technical readers #}
+            <p class="lead">
+                A lightweight web application that helps small and medium-sized enterprises
+                manage invoices, follow up payments and gain a clearer view of their cash flow.
+            </p>
+
+            {# 
+                Additional context explaining the scope and design decisions:
+                - focus on core functions,
+                - configurable rules (tax, currency),
+                - position as a support tool for digitalisation.
+            #}
+            <p class="text-muted">
+                The prototype focuses on core functions: customer management, invoice creation,
+                simple analytics and configurable business rules such as tax rate and currency.
+                It is designed as a transparent, adaptable support tool for SME digitalisation,
+                rather than a full commercial invoicing product.
+            </p>
+        </div>
+    </div>
+
+    {#
+        Three main navigation cards:
+        - Overview & KPIs: leads to the dashboard with key indicators.
+        - Invoices: leads to the operational invoice list and filters.
+        - Customers & settings: leads to master data and configuration.
+
+        Using cards instead of simple links makes the structure clearer in screenshots
+        and supports the explanation of the system architecture in the thesis.
+    #}
+    <div class="row g-3">
+        <!-- Card 1: Dashboard / KPIs -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">Overview &amp; KPIs</h5>
+                    <p class="card-text text-muted">
+                        View key indicators such as number of customers, issued invoices,
+                        unpaid amounts and overdue totals to support basic cash-flow monitoring.
+                    </p>
+                    <a href="/dashboard" class="btn btn-primary mt-auto">Go to dashboard</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Invoice management -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">Invoices</h5>
+                    <p class="card-text text-muted">
+                        Create new invoices, monitor due dates and mark payments. Filter
+                        by overdue or due soon to support follow-up activities and reduce
+                        the risk of forgotten receivables.
+                    </p>
+                    <a href="/invoices" class="btn btn-outline-primary mt-auto">Open invoices</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Customers + configuration (low-code flavour) -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">Customers &amp; settings</h5>
+                    <p class="card-text text-muted">
+                        Maintain the customer list and adjust core settings, such as the
+                        default tax rate and working currency used by the system. This
+                        illustrates a simple, configurable (low-code-style) approach.
+                    </p>
+                    <div class="mt-auto">
+                        <a href="/customers" class="btn btn-outline-secondary me-2">Customers</a>
+                        <a href="/settings" class="btn btn-outline-secondary">Settings</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {#
+        Development / testing utilities:
+        - clearly separated from the main business functions,
+        - labelled as non-production,
+        - used to quickly prepare data for demonstrations and screenshots.
+
+        In the thesis you can explicitly say that these links represent developer tooling
+        and would normally be removed or protected in a live SME environment.
+    #}
+    <div class="mt-4">
+        <h6>Development utilities</h6>
+        <p class="small text-muted">
+            The links below are used during development and testing of the prototype.
+            In a production environment, they would normally be disabled or removed.
+        </p>
+        <p class="small">
+            <a href="/seed-demo" class="link-secondary">Insert demo data</a> |
+            <a href="/seed-additional-data" class="link-secondary">Insert additional demo data</a> |
+            <a href="/init-db" class="link-danger">Recreate database (use with care)</a>
+        </p>
+    </div>
+{% endblock %}

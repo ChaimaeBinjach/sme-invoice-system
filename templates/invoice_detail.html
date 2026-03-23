@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{# 
+    Browser tab title for the detail view of a single invoice.
+    Example: "Invoice 2025-0001 - SME Invoice System"
+#}
+{% block title %}Invoice {{ invoice.invoice_number }} - SME Invoice System{% endblock %}
+
+{% block content %}
+    {#
+        Detail view of a single invoice.
+
+        Main purposes:
+        - show all important invoice data in a compact, readable layout,
+        - display line items (if any are stored),
+        - display financial summary (subtotal, tax, total),
+        - provide a simple "Print" button so the page can be exported as PDF.
+
+        The 'invoice' object is passed from app.py (invoice_detail view).
+    #}
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <!-- Title with invoice number -->
+        <h1 class="mb-0">Invoice {{ invoice.invoice_number }}</h1>
+
+        {# 
+            Simple client-side print button.
+            window.print() opens the browser's print dialog.
+        #}
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print();">
+            Print
+        </button>
+    </div>
+
+    {# --- Header section: customer block and invoice meta-data ---------------- #}
+    <div class="row mb-3">
+        <!-- Customer information block -->
+        <div class="col-md-6">
+            <h5>Customer</h5>
+            <p class="mb-1"><strong>{{ invoice.customer.name }}</strong></p>
+            <p class="mb-1">{{ invoice.customer.address }}</p>
+            <p class="mb-1">{{ invoice.customer.email }}</p>
+            <p class="mb-1">{{ invoice.customer.phone }}</p>
+        </div>
+
+        <!-- Invoice meta-data block -->
+        <div class="col-md-6">
+            <h5>Invoice data</h5>
+            <p class="mb-1">Issue date: {{ invoice.issue_date }}</p>
+            <p class="mb-1">Due date: {{ invoice.due_date }}</p>
+            <p class="mb-1">Status: {{ invoice.status }}</p>
+            <p class="mb-1">Currency: {{ invoice.currency }}</p>
+        </div>
+    </div>
+
+    {# --- Line items: only shown if there are any associated with this invoice #}
+    {% if invoice.items %}
+        <h5>Items</h5>
+        <div class="table-responsive mb-3">
+            <table class="table table-sm table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Description</th>
+                        <th class="text-end">Quantity</th>
+                        <th class="text-end">Unit price</th>
+                        <th class="text-end">Line total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {# Loop over all InvoiceItem records linked to this invoice #}
+                    {% for item in invoice.items %}
+                        <tr>
+                            <td>{{ item.description }}</td>
+                            <td class="text-end">{{ "%.2f"|format(item.quantity) }}</td>
+                            <td class="text-end">{{ "%.2f"|format(item.unit_price) }}</td>
+                            <td class="text-end">{{ "%.2f"|format(item.line_total) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    {# --- Lower section: free-text notes + financial summary card ------------- #}
+    <div class="row">
+        <div class="col-md-6">
+            {# Optional notes field, only displayed if not empty #}
+            {% if invoice.notes %}
+                <h6>Notes</h6>
+                <p>{{ invoice.notes }}</p>
+            {% endif %}
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Summary</h6>
+
+                    {# Subtotal row #}
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Subtotal</span>
+                        <span>{{ "%.2f"|format(invoice.subtotal) }} {{ invoice.currency }}</span>
+                    </div>
+
+                    {# Tax row #}
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Tax</span>
+                        <span>{{ "%.2f"|format(invoice.tax_amount) }} {{ invoice.currency }}</span>
+                    </div>
+
+                    {# Total row (bold) #}
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total</span>
+                        <span>{{ "%.2f"|format(invoice.total_amount) }} {{ invoice.currency }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Link back to the main invoice list screen #}
+    <a href="/invoices" class="btn btn-link mt-3">Back to invoices</a>
+{% endblock %}

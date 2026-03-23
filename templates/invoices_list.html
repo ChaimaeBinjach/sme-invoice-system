@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{#
+  Invoices list view (shared template).
+
+  This template is used by three different routes:
+  - /invoices            → all invoices
+  - /invoices/overdue    → overdue invoices
+  - /invoices/due-soon   → invoices that are due in the next 7 days
+
+  The Python views pass:
+  - invoices    → list of Invoice objects to display
+  - view_title  → optional title (e.g. "Overdue invoices")
+  - search_term → current search query (if any)
+
+  The idea is to reuse one template and control the text using view_title.
+#}
+{% block title %}Invoices - SME Invoice System{% endblock %}
+
+{% block content %}
+
+    {# Header section: title + short explanation on the left, filters on the right #}
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h1 class="mb-0">
+                {# 
+                  If the backend provides a custom view_title (e.g. "Overdue invoices"),
+                  we display that. Otherwise we fall back to the generic label "Invoices".
+                #}
+                {% if view_title %}
+                    {{ view_title }}
+                {% else %}
+                    Invoices
+                {% endif %}
+            </h1>
+            <div class="small text-muted">
+                Monitor issued invoices, track payment status and support cash-flow planning.
+            </div>
+        </div>
+
+        <div class="text-end">
+            {# 
+              Search form.
+
+              - method="get" means the query will be sent as a URL parameter (?q=...).
+              - The backend reads request.args["q"] and filters invoice_number OR customer name.
+              - Keeping the search term in value="{{ search_term }}" makes the UX clearer.
+            #}
+            <form class="d-flex mb-2" method="get">
+                <input
+                    class="form-control form-control-sm me-2"
+                    type="search"
+                    name="q"
+                    placeholder="Search by invoice # or customer"
+                    value="{{ search_term or '' }}"
+                >
+                <button class="btn btn-sm btn-outline-secondary" type="submit">
+                    Search
+                </button>
+            </form>
+
+            {# 
+              Shortcuts to common invoice-related views:
+              - Create a new invoice
+              - See all / due soon / overdue
+              - Export CSV for accountants or external systems
+            #}
+            <a href="/invoices/new" class="btn btn-primary mb-2">+ New invoice</a><br>
+            <a href="/invoices" class="btn btn-outline-secondary btn-sm">All</a>
+            <a href="/invoices/due-soon" class="btn btn-outline-warning btn-sm">Due soon</a>
+            <a href="/invoices/overdue" class="btn btn-outline-danger btn-sm">Overdue</a>
+            <a href="/export/invoices" class="btn btn-outline-info btn-sm">Export CSV</a>
+        </div>
+    </div>
+
+    {# Main table: only shown when the invoices list is not empty #}
+    {% if invoices %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Issue date</th>
+                        <th>Due date</th>
+                        <th>Status</th>
+                        <th class="text-end">Subtotal</th>
+                        <th class="text-end">Tax</th>
+                        <th class="text-end">Total</th>
+                        <th>Currency</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in invoices %}
+                        {#
+                          Row-level highlighting to make the list easier to scan:
+
+                          - Paid invoices     → green background (Bootstrap "table-success")
+                          - Overdue invoices → red background (Bootstrap "table-danger")
+
+                          Overdue logic (status + due date) is handled in Python,
+                          so here we only react to the status field.
+                        #}
+                        <tr class="
+                            {% if inv.status == 'Paid' %}
+                                table-success
+                            {% elif inv.status == 'Overdue' %}
+                                table-danger
+                            {% endif %}
+                        ">
+                            <td>{{ inv.invoice_number }}</td>
+                            <td>{{ inv.customer.name }}</td>
+                            <td>{{ inv.issue_date }}</td>
+                            <td>{{ inv.due_date }}</td>
+                            <td>{{ inv.status }}</td>
+
+                            {# Monetary fields are right-aligned and formatted to 2 decimals #}
+                            <td class="text-end">{{ "%.2f"|format(inv.subtotal) }}</td>
+                            <td class="text-end">{{ "%.2f"|format(inv.tax_amount) }}</td>
+                            <td class="text-end">{{ "%.2f"|format(inv.total_amount) }}</td>
+
+                            <td>{{ inv.currency }}</td>
+
+                            <td class="text-end">
+                                {# Detail view: print-friendly invoice page #}
+                                <a href="/invoices/{{ inv.id }}" class="btn btn-sm btn-outline-secondary">
+                                    View
+                                </a>
+
+                                {# Edit view: allows changing dates, tax, status, notes and optional items #}
+                                <a href="/invoices/{{ inv.id }}/edit" class="btn btn-sm btn-outline-primary">
+                                    Edit
+                                </a>
+
+                                {#
+                                  Status change actions:
+
+                                  - If the invoice is already Paid, we show a button to mark it back as "Sent"
+                                    (undo in case the payment was recorded by mistake).
+
+                                  - Otherwise, we show a button to mark it as Paid.
+
+                                  Both actions trigger small POST forms for safety,
+                                  mapped to /invoices/<id>/mark-... routes in app.py.
+                                #}
+                                {% if inv.status == 'Paid' %}
+                                    <form
+                                        action="/invoices/{{ inv.id }}/mark-sent"
+                                        method="post"
+                                        style="display:inline;"
+                                    >
+                                        <button type="submit" class="btn btn-sm btn-warning">
+                                            Mark as Sent
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <form
+                                        action="/invoices/{{ inv.id }}/mark-paid"
+                                        method="post"
+                                        style="display:inline;"
+                                    >
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            Mark paid
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        {# Shown when there are no invoices in the system at all (fresh database) #}
+        <div class="alert alert-info">
+            No invoices found yet.
+        </div>
+    {% endif %}
+{% endblock %}

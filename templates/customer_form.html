@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{#
+    Dynamic page title:
+    - when mode == "edit" → "Edit customer - SME Invoice System"
+    - when mode == "create" → "New customer - SME Invoice System"
+
+    The "mode" variable is passed from the Flask view:
+    - create_customer → mode = "create"
+    - edit_customer   → mode = "edit"
+#}
+{% block title %}
+    {% if mode == 'edit' %}
+        Edit customer - SME Invoice System
+    {% else %}
+        New customer - SME Invoice System
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {#
+        Customer form template.
+
+        Reused for two different use cases:
+        1. Creating a new customer (no existing data, empty fields).
+        2. Editing an existing customer (fields are pre-filled).
+
+        The view passes:
+        - mode: "create" or "edit"
+        - customer: None (for create) or a Customer object (for edit)
+        - error: optional validation message from the Flask route
+    #}
+
+    <h1 class="mb-3">
+        {% if mode == 'edit' %}
+            Edit customer
+        {% else %}
+            New customer
+        {% endif %}
+    </h1>
+
+    {# If the backend detected a validation problem, show it here. #}
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    {#
+        Main customer form.
+        - method="post": data is sent to the same URL using HTTP POST.
+        - Styling: Bootstrap card to visually separate the form.
+    #}
+    <form method="post" class="card p-3 shadow-sm">
+
+        {# Customer name: required, core identifier used on invoices. #}
+        <div class="mb-3">
+            <label for="name" class="form-label">Name *</label>
+            <input
+                type="text"
+                id="name"
+                name="name"
+                class="form-control"
+                required
+                value="{{ customer.name if customer else '' }}"
+            >
+        </div>
+
+        {# Tax number: optional, but important for real invoicing scenarios. #}
+        <div class="mb-3">
+            <label for="tax_number" class="form-label">Tax number</label>
+            <input
+                type="text"
+                id="tax_number"
+                name="tax_number"
+                class="form-control"
+                value="{{ customer.tax_number if customer else '' }}"
+            >
+        </div>
+
+        {# Postal address: used for invoice headers and communication. #}
+        <div class="mb-3">
+            <label for="address" class="form-label">Address</label>
+            <input
+                type="text"
+                id="address"
+                name="address"
+                class="form-control"
+                value="{{ customer.address if customer else '' }}"
+            >
+        </div>
+
+        <div class="row">
+            {# Email address: communication channel, optional in this prototype. #}
+            <div class="col-md-6 mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    class="form-control"
+                    value="{{ customer.email if customer else '' }}"
+                >
+            </div>
+
+            {# Phone number: another optional contact channel. #}
+            <div class="col-md-6 mb-3">
+                <label for="phone" class="form-label">Phone</label>
+                <input
+                    type="text"
+                    id="phone"
+                    name="phone"
+                    class="form-control"
+                    value="{{ customer.phone if customer else '' }}"
+                >
+            </div>
+        </div>
+
+        {#
+            Payment terms in days:
+            - stored per customer,
+            - later used as a rule when calculating the due date
+              for invoices if the user does not enter a manual due date.
+        #}
+        <div class="mb-3">
+            <label for="payment_terms_days" class="form-label">Payment terms (days)</label>
+            <input
+                type="number"
+                id="payment_terms_days"
+                name="payment_terms_days"
+                class="form-control"
+                value="{{ customer.payment_terms_days if customer else '30' }}"
+            >
+            <div class="form-text">
+                Used as default due date calculation for new invoices.
+            </div>
+        </div>
+
+        {#
+            "Active" flag is only shown in edit mode:
+            - allows deactivating a customer without deleting historical invoices,
+            - deactivated customers are still kept for reporting purposes.
+        #}
+        {% if mode == 'edit' %}
+            <div class="form-check mb-3">
+                <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="is_active"
+                    name="is_active"
+                    {% if customer.is_active %}checked{% endif %}
+                >
+                <label class="form-check-label" for="is_active">
+                    Active customer
+                </label>
+            </div>
+        {% endif %}
+
+        {#
+            Submit button:
+            - text depends on the mode (create vs edit),
+            - Cancel link sends the user back to the customer list.
+        #}
+        <button type="submit" class="btn btn-primary">
+            {% if mode == 'edit' %}
+                Save changes
+            {% else %}
+                Create customer
+            {% endif %}
+        </button>
+        <a href="/customers" class="btn btn-secondary ms-2">Cancel</a>
+    </form>
+{% endblock %}
