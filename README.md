@@ -1,89 +1,220 @@
 # SME Invoice System
 
-A lightweight invoice management web application built with **Python**, **Flask**, **SQLite**, and **Flask-SQLAlchemy**.
+A lightweight invoice management web application built with **Python**, **Flask**, **SQLite**, **SQLAlchemy**, **Jinja templates**, and **Bootstrap**.
 
-This project was developed as a prototype to demonstrate how a small or medium-sized enterprise (SME) can manage customer data, create and track invoices, monitor receivables, and generate simple analytics from the same dataset.
+This project was developed as a research prototype for an MSc thesis. It demonstrates how a small or medium-sized enterprise (SME) can manage customer records, create and monitor invoices, follow payment status, identify due-soon and overdue invoices, export invoice data, and reuse the same database for simple analytics.
 
-The aim of the project is to keep the system practical, understandable, and easy to use while still reflecting common real-world back-office needs such as invoice lifecycle tracking, overdue monitoring, configurable defaults, and reporting.
-
----
-
-## About the Project
-
-Many SMEs still handle invoice-related tasks in a fragmented way, using spreadsheets, manual tracking, or disconnected tools. This application was designed as a simple and focused alternative: one place to store customer records, create invoices, track their status, and monitor unpaid or overdue receivables.
-
-The project also demonstrates that once business data is captured digitally, it can be reused not only inside the main application, but also for reporting and decision support.
+The system is **not** a certified accounting product or legally approved invoicing system. It is a prototype for process analysis, implementation, testing, and evaluation.
 
 ---
 
-## Main Features
+## 1. Main features
 
-### Customer Management
-- Create and manage customer records
-- Store business details such as:
-  - name
-  - tax number
-  - address
-  - e-mail
-  - phone number
-  - payment terms
-- Edit customer information when needed
-
-### Invoice Management
-- Create new invoices
-- Edit existing invoices
-- Assign invoices to customers
-- Add invoice notes
-- Set issue date and due date
-- Track invoice status through a simple lifecycle:
-  - Draft
-  - Sent
-  - Paid
-
-### Invoice Line Items
-- Add up to three optional line items in the invoice form
-- Automatically calculate line totals
-- Use item-based subtotal calculation when line items are entered
-- Recalculate tax and final total automatically
-
-### Dashboard and Receivables Monitoring
-- View a simple dashboard with key indicators
-- Monitor:
-  - total number of customers
-  - total number of invoices
-  - total invoiced amount
-  - unpaid amount
-  - overdue amount
-- Display overdue invoices for quick follow-up
-
-### Smart Invoice Views
-- List all invoices
-- Search invoices by invoice number or customer name
-- View overdue invoices
-- View invoices due in the next 7 days
-- Open a print-friendly invoice detail page
-
-### Export and Reporting
-- Export invoice data to CSV
-- Reuse the same database in a separate analytics script
-- Generate a basic text-based management report from stored data
-
-### Configurable System Settings
-- Change default tax percentage
-- Change default currency
-- Demonstrate a low-code / no-code style approach where business users can adjust defaults without changing the source code
+- Customer management: create, edit, list, and deactivate customers.
+- Invoice management: create, edit, view, and list invoices.
+- Invoice line items: add up to three optional line items per invoice form.
+- Status tracking: Draft, Sent, and Paid status values.
+- Due-soon view: list unpaid invoices due within the next 7 days.
+- Overdue view: list invoices that are not Paid and have a due date in the past.
+- Dashboard: show total customers, total invoices, total invoiced amount, unpaid amount, overdue amount, and overdue invoice list.
+- Settings page: configure default tax percentage and default currency.
+- CSV export: export invoice data for spreadsheet use or accountant support.
+- Offline analytics: run a console report from the same SQLite database.
+- Demo data utilities: insert synthetic customer and invoice data for testing and screenshots.
 
 ---
 
-## Technologies Used
+## 2. Project structure
 
-- **Python**
-- **Flask**
-- **Flask-SQLAlchemy**
-- **SQLite**
-- **SQLAlchemy**
-- **HTML / Jinja templates**
-- **CSV export**
+```text
+SME_Invoice_System/
+├── app.py                  # Main Flask application, database models, routes and business logic
+├── analytics.py            # Offline analytics script using the same SQLite database
+├── invoice.db              # SQLite demo database with synthetic sample data
+├── requirements.txt        # Python dependencies
+├── .gitignore              # Files/folders excluded from version control
+├── static/
+│   ├── favicon.png
+│   └── style.css           # Small custom styling on top of Bootstrap
+└── templates/
+    ├── base.html           # Shared layout, navigation and footer
+    ├── home.html
+    ├── dashboard.html
+    ├── invoices_list.html
+    ├── invoice_form.html
+    ├── invoice_detail.html
+    ├── customers_list.html
+    ├── customer_form.html
+    └── settings.html
+```
 
 ---
 
+## 3. Requirements
+
+Recommended environment:
+
+- Python 3.11 or newer
+- pip
+- A web browser such as Chrome, Edge, or Firefox
+
+Python packages are listed in `requirements.txt`:
+
+```text
+Flask==3.1.2
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.44
+```
+
+SQLite is included with Python, so no separate database server is required.
+
+---
+
+## 4. How to install and run the system
+
+### Step 1: Open the project folder
+
+Open a terminal or command prompt and go to the project directory:
+
+```bash
+cd SME_Invoice_System
+```
+
+### Step 2: Create a virtual environment
+
+On Windows:
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+On macOS or Linux:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### Step 3: Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Step 4: Run the Flask application
+
+```bash
+python app.py
+```
+
+After starting the application, open this address in the browser:
+
+```text
+http://127.0.0.1:5000/
+```
+
+The application starts with the included `invoice.db` demo database. If the database file is removed, the application will create the database tables automatically when it starts.
+
+---
+
+## 5. Demo data and database utilities
+
+The following routes are included only for development and thesis demonstration. They should not be exposed in a production system.
+
+Open these URLs in the browser while the app is running:
+
+```text
+http://127.0.0.1:5000/init-db
+http://127.0.0.1:5000/seed-demo
+http://127.0.0.1:5000/seed-additional-data
+```
+
+Purpose:
+
+- `/init-db` creates database tables from the SQLAlchemy models.
+- `/seed-demo` inserts a small initial synthetic dataset.
+- `/seed-additional-data` inserts extra synthetic customers and invoices for testing and screenshots.
+
+The seed routes are idempotent for the included demo records, meaning they check existing data before adding duplicates.
+
+---
+
+## 6. Main application pages
+
+After running the application, these pages are available:
+
+```text
+/                         Home page
+/dashboard                Dashboard and KPIs
+/invoices                 Full invoice list
+/invoices/due-soon        Invoices due in the next 7 days
+/invoices/overdue         Overdue invoices
+/invoices/new             Create new invoice
+/customers                Customer list
+/customers/new            Create new customer
+/settings                 Default tax and currency settings
+/export/invoices          Export invoices as CSV
+```
+
+---
+
+## 7. How to run the offline analytics script
+
+Make sure the Flask application has already created or contains `invoice.db`, then run:
+
+```bash
+python analytics.py
+```
+
+The script prints a simple management-style report to the terminal, including total customers, total invoices, total invoiced amount, unpaid amount, overdue amount, and overdue invoices.
+
+---
+
+## 8. Testing checklist
+
+A simple manual test can be carried out as follows:
+
+1. Open the home page.
+2. Open the dashboard and check the KPI cards.
+3. Open the customer list and create or edit a customer.
+4. Create an invoice from `/invoices/new`.
+5. Add one or more line items and check that subtotal, tax, and total are saved correctly.
+6. Open the invoice list and search by invoice number or customer name.
+7. Open the due-soon and overdue invoice views.
+8. Mark an invoice as Paid and check that dashboard/overdue values change.
+9. Export invoices as CSV using `/export/invoices`.
+10. Run `python analytics.py` and compare the console report with the web dashboard.
+
+---
+
+## 9. Prototype limitations
+
+The application is a research prototype. It intentionally excludes several production-level features:
+
+- user authentication and role-based access control;
+- legal invoice certification and tax authority reporting;
+- accounting-system integration;
+- payment gateway integration;
+- bank reconciliation;
+- audit logging;
+- advanced validation and localization;
+- production deployment hardening.
+
+These limitations match the thesis scope. The purpose of the system is to demonstrate process digitalization and evaluation, not to replace certified invoicing or accounting software.
+
+---
+
+## 10. Notes for thesis submission
+
+For final submission, use this clean project folder/ZIP rather than the development folder. The clean package should include the source code, templates, static files, demo database, requirements file, and this README.
+
+Do not include:
+
+- `.git/`
+- `venv/` or `.venv/`
+- `__pycache__/`
+- `.pyc` files
+- IDE folders such as `.vscode/` or `.idea/`
+
+The source code should be submitted as a ZIP package together with any required thesis attachments. A GitHub link is optional only if the supervisor specifically requests it; otherwise the ZIP file is safer and more stable for assessment.
