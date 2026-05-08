@@ -2,7 +2,7 @@
 
 A lightweight invoice management web application built with **Python**, **Flask**, **SQLite**, **SQLAlchemy**, **Jinja templates**, and **Bootstrap**.
 
-This project was developed as a research prototype for an MSc thesis. It demonstrates how a small or medium-sized enterprise (SME) can manage customer records, create and monitor invoices, follow payment status, identify due-soon and overdue invoices, export invoice data, and reuse the same database for simple analytics.
+This project was developed as a research prototype. It demonstrates how a small or medium-sized enterprise (SME) can manage customer records, create and monitor invoices, follow payment status, identify due-soon and overdue invoices, export invoice data, and reuse the same database for simple analytics.
 
 The system is **not** a certified accounting product or legally approved invoicing system. It is a prototype for process analysis, implementation, testing, and evaluation.
 
@@ -201,20 +201,8 @@ The application is a research prototype. It intentionally excludes several produ
 - advanced validation and localization;
 - production deployment hardening.
 
-These limitations match the thesis scope. The purpose of the system is to demonstrate process digitalization and evaluation, not to replace certified invoicing or accounting software.
+The purpose of the system is to demonstrate process digitalization and evaluation, not to replace certified invoicing or accounting software.
 
 ---
 
-## 10. Notes for thesis submission
 
-For final submission, use this clean project folder/ZIP rather than the development folder. The clean package should include the source code, templates, static files, demo database, requirements file, and this README.
-
-Do not include:
-
-- `.git/`
-- `venv/` or `.venv/`
-- `__pycache__/`
-- `.pyc` files
-- IDE folders such as `.vscode/` or `.idea/`
-
-The source code should be submitted as a ZIP package together with any required thesis attachments. A GitHub link is optional only if the supervisor specifically requests it; otherwise the ZIP file is safer and more stable for assessment.
