@@ -9,6 +9,7 @@ from sqlalchemy import or_  # used for search (invoice number OR customer name)
 
 # =============================================================================
 # SME Invoice System - Prototype for MSc thesis (Chaimae Binjach)
+# github: https://github.com/ChaimaeBinjach/sme-invoice-system
 # -----------------------------------------------------------------------------
 # This application is a lightweight web tool that supports basic invoice
 # management for small and medium-sized enterprises (SMEs).
@@ -1148,7 +1149,6 @@ def system_settings():
     if request.method == "POST":
         # --- Tax value --------------------------------------------------------
         tax_raw = request.form.get("default_tax_percent", "").replace(",", ".").strip()
-
         try:
             tax_value = float(tax_raw)
         except ValueError:
@@ -1167,7 +1167,6 @@ def system_settings():
         else:
             # "OTHER" selected or nothing selected: use the typed custom code
             currency = custom_currency or settings.default_currency or "HUF"
-
         # Persist values
         settings.default_tax_percent = tax_value
         settings.default_currency = currency
@@ -1176,9 +1175,7 @@ def system_settings():
 
     return render_template("settings.html", settings=settings, message=message)
 
-
 # --- Application entry point --------------------------------------------------
-
 
 if __name__ == "__main__":
     # Ensure all tables exist before serving requests.
