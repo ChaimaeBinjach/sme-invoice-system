@@ -1,3 +1,7 @@
-Flask
-Flask-SQLAlchemy
-SQLAlchemy
+# Python package requirements for the SME Invoice System prototype
+# Install with:
+#   pip install -r requirements.txt
+
+Flask==3.1.2
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.44

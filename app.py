@@ -79,7 +79,7 @@ class Invoice(db.Model):
     invoice_number = db.Column(db.String(50), unique=True, nullable=False)
 
     customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=False)
-    customer = db.relationship("Customer", backref="invoices")
+    customer = db.relationship("Customer", backref=db.backref("invoices", cascade="all, delete-orphan"))
 
     issue_date = db.Column(db.Date, default=date.today)
     due_date = db.Column(db.Date, nullable=False)
@@ -98,7 +98,7 @@ class Invoice(db.Model):
     notes = db.Column(db.Text)
 
     # One-to-many relationship: an invoice can have multiple items.
-    items = db.relationship("InvoiceItem", backref="invoice", lazy=True)
+    items = db.relationship("InvoiceItem", backref="invoice", lazy=True, cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Invoice {self.invoice_number}>"
@@ -739,35 +739,39 @@ def create_invoice():
                 tax_amount = subtotal * (tax_percent / 100.0)
                 total_amount = subtotal + tax_amount
 
-                # Create new invoice record
-                new_invoice = Invoice(
-                    invoice_number=invoice_number,
-                    customer=customer,
-                    issue_date=issue_date,
-                    due_date=due_date,
-                    status=status,
-                    subtotal=subtotal,
-                    tax_amount=tax_amount,
-                    total_amount=total_amount,
-                    currency=currency,
-                    notes=notes,
-                )
-                db.session.add(new_invoice)
-                db.session.flush()  # ensure new_invoice.id exists
-
-                # Create line item rows if any items were entered
-                for item in line_items_data:
-                    ii = InvoiceItem(
-                        invoice=new_invoice,
-                        description=item["description"],
-                        quantity=item["quantity"],
-                        unit_price=item["unit_price"],
-                        line_total=item["line_total"],
+                # Validate dates: due date cannot be before issue date
+                if due_date < issue_date:
+                    error = "Due date cannot be before issue date."
+                else:
+                    # Create new invoice record
+                    new_invoice = Invoice(
+                        invoice_number=invoice_number,
+                        customer=customer,
+                        issue_date=issue_date,
+                        due_date=due_date,
+                        status=status,
+                        subtotal=subtotal,
+                        tax_amount=tax_amount,
+                        total_amount=total_amount,
+                        currency=currency,
+                        notes=notes,
                     )
-                    db.session.add(ii)
+                    db.session.add(new_invoice)
+                    db.session.flush()  # ensure new_invoice.id exists
 
-                db.session.commit()
-                return redirect(url_for("list_invoices"))
+                    # Create line item rows if any items were entered
+                    for item in line_items_data:
+                        ii = InvoiceItem(
+                            invoice=new_invoice,
+                            description=item["description"],
+                            quantity=item["quantity"],
+                            unit_price=item["unit_price"],
+                            line_total=item["line_total"],
+                        )
+                        db.session.add(ii)
+
+                    db.session.commit()
+                    return redirect(url_for("list_invoices"))
 
     # GET request or form error: re-display the form
     return render_template(
@@ -912,38 +916,43 @@ def edit_invoice(invoice_id: int):
                 tax_amount = subtotal * (tax_percent / 100.0)
                 total_amount = subtotal + tax_amount
 
-                # Update invoice header fields
-                invoice.invoice_number = invoice_number
-                invoice.customer = customer
-                invoice.issue_date = issue_date
-                invoice.due_date = due_date
-                invoice.status = status
-                invoice.subtotal = subtotal
-                invoice.tax_amount = tax_amount
-                invoice.total_amount = total_amount
-                invoice.currency = currency
-                invoice.notes = notes
+                # Validate dates: due date cannot be before issue date
+                if due_date < issue_date:
+                    error = "Due date cannot be before issue date."
+                else:
+                    # Update invoice header fields
+                    invoice.invoice_number = invoice_number
+                    invoice.customer = customer
+                    invoice.issue_date = issue_date
+                    invoice.due_date = due_date
+                    invoice.status = status
+                    invoice.subtotal = subtotal
+                    invoice.tax_amount = tax_amount
+                    invoice.total_amount = total_amount
+                    invoice.currency = currency
+                    invoice.notes = notes
 
-                # Replace line items only if user entered new ones
-                if line_items_data:
-                    InvoiceItem.query.filter_by(invoice_id=invoice.id).delete()
-                    for item in line_items_data:
-                        ii = InvoiceItem(
-                            invoice=invoice,
-                            description=item["description"],
-                            quantity=item["quantity"],
-                            unit_price=item["unit_price"],
-                            line_total=item["line_total"],
-                        )
-                        db.session.add(ii)
+                    # Replace line items only if user entered new ones
+                    if line_items_data:
+                        InvoiceItem.query.filter_by(invoice_id=invoice.id).delete()
+                        for item in line_items_data:
+                            ii = InvoiceItem(
+                                invoice=invoice,
+                                description=item["description"],
+                                quantity=item["quantity"],
+                                unit_price=item["unit_price"],
+                                line_total=item["line_total"],
+                            )
+                            db.session.add(ii)
 
-                db.session.commit()
-                return redirect(url_for("list_invoices"))
+                    db.session.commit()
+                    return redirect(url_for("list_invoices"))
 
     return render_template(
         "invoice_form.html",
         error=error,
         customers=customers,
+        items=invoice.items,
         settings=settings,
         mode="edit",
         invoice=invoice,
@@ -965,16 +974,13 @@ def mark_invoice_paid(invoice_id: int):
     return redirect(url_for("list_invoices"))
 
 
-@app.route("/invoices/<int:invoice_id>/mark-sent", methods=["POST"])
-def mark_invoice_sent(invoice_id: int):
+@app.route("/invoices/<int:invoice_id>/delete", methods=["POST"])
+def delete_invoice(invoice_id: int):
     """
-    Undo operation for 'Paid': set status back to 'Sent'.
-
-    This is useful if a payment was recorded by mistake or if the invoice
-    needs to be re-opened for some reason.
+    Delete an invoice and its associated line items.
     """
     invoice = Invoice.query.get_or_404(invoice_id)
-    invoice.status = "Sent"
+    db.session.delete(invoice)
     db.session.commit()
     return redirect(url_for("list_invoices"))
 
@@ -1065,24 +1071,40 @@ def create_customer():
         if not name:
             error = "Name is required."
         else:
-            try:
-                payment_terms_days = int(payment_terms_days_raw)
-            except ValueError:
-                # Fallback: use default 30 days if user input is not valid
-                payment_terms_days = 30
+            # Check uniqueness for tax_number, phone, email
+            existing_customer = Customer.query.filter(
+                or_(
+                    (Customer.tax_number == tax_number and tax_number),
+                    (Customer.phone == phone and phone),
+                    (Customer.email == email and email)
+                )
+            ).first()
+            if existing_customer:
+                if existing_customer.tax_number == tax_number and tax_number:
+                    error = "Tax number already exists for another customer."
+                elif existing_customer.phone == phone and phone:
+                    error = "Phone number already exists for another customer."
+                elif existing_customer.email == email and email:
+                    error = "Email already exists for another customer."
+            else:
+                try:
+                    payment_terms_days = int(payment_terms_days_raw)
+                except ValueError:
+                    # Fallback: use default 30 days if user input is not valid
+                    payment_terms_days = 30
 
-            new_customer = Customer(
-                name=name,
-                tax_number=tax_number,
-                address=address,
-                email=email,
-                phone=phone,
-                payment_terms_days=payment_terms_days,
-                is_active=True,
-            )
-            db.session.add(new_customer)
-            db.session.commit()
-            return redirect(url_for("list_customers"))
+                new_customer = Customer(
+                    name=name,
+                    tax_number=tax_number,
+                    address=address,
+                    email=email,
+                    phone=phone,
+                    payment_terms_days=payment_terms_days,
+                    is_active=True,
+                )
+                db.session.add(new_customer)
+                db.session.commit()
+                return redirect(url_for("list_customers"))
 
     return render_template("customer_form.html", error=error, mode="create", customer=None)
 
@@ -1110,24 +1132,52 @@ def edit_customer(customer_id: int):
         if not name:
             error = "Name is required."
         else:
-            try:
-                payment_terms_days = int(payment_terms_days_raw)
-            except ValueError:
-                payment_terms_days = customer.payment_terms_days
+            # Check uniqueness for tax_number, phone, email, excluding current customer
+            existing_customer = Customer.query.filter(
+                Customer.id != customer_id,
+                or_(
+                    (Customer.tax_number == tax_number and tax_number),
+                    (Customer.phone == phone and phone),
+                    (Customer.email == email and email)
+                )
+            ).first()
+            if existing_customer:
+                if existing_customer.tax_number == tax_number and tax_number:
+                    error = "Tax number already exists for another customer."
+                elif existing_customer.phone == phone and phone:
+                    error = "Phone number already exists for another customer."
+                elif existing_customer.email == email and email:
+                    error = "Email already exists for another customer."
+            else:
+                try:
+                    payment_terms_days = int(payment_terms_days_raw)
+                except ValueError:
+                    payment_terms_days = customer.payment_terms_days
 
-            # Update fields in place
-            customer.name = name
-            customer.tax_number = tax_number
-            customer.address = address
-            customer.email = email
-            customer.phone = phone
-            customer.payment_terms_days = payment_terms_days
-            customer.is_active = is_active_raw == "on"
+                # Update fields in place
+                customer.name = name
+                customer.tax_number = tax_number
+                customer.address = address
+                customer.email = email
+                customer.phone = phone
+                customer.payment_terms_days = payment_terms_days
+                customer.is_active = is_active_raw == "on"
 
-            db.session.commit()
-            return redirect(url_for("list_customers"))
+                db.session.commit()
+                return redirect(url_for("list_customers"))
 
     return render_template("customer_form.html", error=error, mode="edit", customer=customer)
+
+
+@app.route("/customers/<int:customer_id>/delete", methods=["POST"])
+def delete_customer(customer_id: int):
+    """
+    Delete a customer from the database.
+    """
+    customer = Customer.query.get_or_404(customer_id)
+    db.session.delete(customer)
+    db.session.commit()
+    return redirect(url_for("list_customers"))
 
 
 # --- Settings (LCNC-style configuration) --------------------------------------
